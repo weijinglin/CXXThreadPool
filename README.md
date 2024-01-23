@@ -1,2 +1,2 @@
 # CXXThreadPool
-A ThreadPool writen in C++ for performance
+A ThreadPool written in C++ for performance
