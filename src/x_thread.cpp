@@ -20,7 +20,7 @@ auto TaskQueue::Pop() -> std::function<void()> {
 
 ThreadPool::ThreadPool(uint64_t num) {
     for (uint64_t i = 0;i < num;++i) {
-        // this->threads.push_back(std::thread(work,this));
+        this->threads.emplace_back(std::thread(&ThreadPool::work,this));
     }
 }
 
