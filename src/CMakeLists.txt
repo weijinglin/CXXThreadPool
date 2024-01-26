@@ -1,0 +1,1 @@
+add_library(mythread x_thread.cpp)
