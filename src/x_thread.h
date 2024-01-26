@@ -14,7 +14,7 @@ namespace MyThreadPool {
         std::mutex queue_guard;
     public:
         TaskQueue() = default;
-        void AddTask(std::function<void()> &&f);
+        void AddTask(std::function<void()> &f);
         auto Pop() -> std::function<void()>;
         bool isEmpty() {return task_queue.empty();}
     };
@@ -37,4 +37,17 @@ namespace MyThreadPool {
         template <class fn,class... Args>
         auto SubmitTask(fn&& f, Args&&... args) -> std::future<decltype(f(std::forward<Args>(args)...))>;
     };
+
+    template <class fn,class... Args>
+    auto ThreadPool::SubmitTask(fn&& f, Args&&... args) -> std::future<decltype(f(std::forward<Args>(args)...))> {
+        auto task = std::bind(f,std::forward<Args>(args)...);
+        std::promise<decltype(f(std::forward<Args>(args)...))> promise;
+        std::function<void()> wrapper_fn = [task,&promise]() {
+            auto res = task();
+            promise.set_value(res);
+        };
+        this->task_queue.AddTask(wrapper_fn);
+        return promise.get_future();
+    }
 }
+

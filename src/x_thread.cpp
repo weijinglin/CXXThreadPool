@@ -2,7 +2,7 @@
 
 using namespace MyThreadPool;
 
-void TaskQueue::AddTask(std::function<void()> &&f) {
+void TaskQueue::AddTask(std::function<void()> &f) {
     {
         std::lock_guard guard(queue_guard);
         this->task_queue.emplace(std::move(f));
@@ -41,16 +41,4 @@ void ThreadPool::work() {
 
 bool ThreadPool::isEmpty() {
     return task_queue.isEmpty();
-}
-
-template <class fn,class... Args>
-auto ThreadPool::SubmitTask(fn&& f, Args&&... args) -> std::future<decltype(f(std::forward<Args>(args)...))> {
-    auto task = std::bind(f,std::forward<Args>(args)...);
-    std::promise<decltype(f(std::forward<Args>(args)...))> promise;
-    std::function<void()> wrapper_fn = [task,&promise]() {
-        auto res = task();
-        promise.set_value(res);
-    };
-    this->task_queue.AddTask(wrapper_fn);
-    return promise.get_future();
 }
