@@ -1,54 +1,62 @@
 #pragma once
 
-#include <queue>
-#include <mutex>
+#include <atomic>
+#include <condition_variable>
 #include <functional>
 #include <future>
-#include <vector>
+#include <mutex>
+#include <queue>
 #include <thread>
-#include <condition_variable>
-#include <iostream>
+#include <vector>
 
 namespace MyThreadPool {
-    class TaskQueue {
-        std::queue<std::function<void()>> task_queue;
-        std::mutex queue_guard;
-    public:
-        TaskQueue() = default;
-        void AddTask(std::function<void()> &f);
-        auto Pop() -> std::function<void()>;
-        bool isEmpty() {return task_queue.empty();}
-    };
+class TaskQueue {
+  std::queue<std::function<void()>> task_queue;
+  std::mutex queue_guard;
 
-    class ThreadPool {
-        TaskQueue task_queue;
-        std::vector<std::thread> threads;
-        std::condition_variable wake_signal;
-        std::mutex task_guard;
-    private:
-        void work();
-    public: 
-        // a function which is not thread-safe
-        bool isEmpty();
+ public:
+  TaskQueue() = default;
+  void AddTask(std::function<void()>& f);
+  auto Pop() -> std::function<void()>;
+  bool isEmpty() { return task_queue.empty(); }
+};
 
-        explicit ThreadPool(uint64_t num);
+class ThreadPool {
+  TaskQueue task_queue;
+  std::vector<std::thread> threads;
+  std::condition_variable wake_signal;
+  std::mutex task_guard;
+  std::atomic_bool is_terminated;
 
-        ThreadPool() = delete;
+ private:
+  void work();
 
-        template <class fn,class... Args>
-        auto SubmitTask(fn&& f, Args&&... args) -> std::future<decltype(f(std::forward<Args>(args)...))>;
-    };
+ public:
+  // a function which is not thread-safe
+  bool isEmpty();
 
-    template <class fn,class... Args>
-    auto ThreadPool::SubmitTask(fn&& f, Args&&... args) -> std::future<decltype(f(std::forward<Args>(args)...))> {
-        auto task = std::bind(f,std::forward<Args>(args)...);
-        std::promise<decltype(f(std::forward<Args>(args)...))> promise;
-        std::function<void()> wrapper_fn = [task,&promise]() {
-            auto res = task();
-            promise.set_value(res);
-        };
-        this->task_queue.AddTask(wrapper_fn);
-        return promise.get_future();
-    }
+  explicit ThreadPool(uint64_t num);
+
+  ThreadPool() = delete;
+
+  ~ThreadPool();
+
+  template <class fn, class... Args>
+  auto SubmitTask(fn&& f, Args&&... args)
+      -> std::promise<decltype(f(std::forward<Args>(args)...))>;
+};
+
+template <class fn, class... Args>
+auto ThreadPool::SubmitTask(fn&& f, Args&&... args)
+    -> std::promise<decltype(f(std::forward<Args>(args)...))> {
+  auto task = std::bind(f, std::forward<Args>(args)...);
+  std::promise<decltype(f(std::forward<Args>(args)...))> promise;
+  std::function<void()> wrapper_fn = [task, &promise]() {
+    auto res = task();
+    promise.set_value(res);
+  };
+  this->task_queue.AddTask(wrapper_fn);
+  wake_signal.notify_all();
+  return promise;
 }
-
+}  // namespace MyThreadPool
