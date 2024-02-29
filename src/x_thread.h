@@ -1,15 +1,15 @@
 #pragma once
 
 #include <atomic>
+#include <concepts>
 #include <condition_variable>
 #include <functional>
 #include <future>
+#include <iostream>
 #include <mutex>
 #include <queue>
 #include <thread>
 #include <vector>
-#include <concepts>
-#include <iostream>
 
 namespace MyThreadPool {
 class TaskQueue {
@@ -24,7 +24,7 @@ class TaskQueue {
 };
 
 template <class R, class... Args>
-R getRetValue(R(*)(Args...));
+R getRetValue(R (*)(Args...));
 
 class ThreadPool {
   TaskQueue task_queue;
@@ -47,48 +47,46 @@ class ThreadPool {
   ~ThreadPool();
 
   template <class fn, class... Args>
-  requires requires (fn&& f, Args&&... args,decltype(f(std::forward<Args>(args)...)) res) {
+  requires requires(fn&& f, Args&&... args,
+                    decltype(f(std::forward<Args>(args)...)) res) {
     res = f(std::forward<Args>(args)...);
   }
   auto SubmitTask(fn&& f, Args&&... args)
       -> std::promise<decltype(f(std::forward<Args>(args)...))>;
 
   template <class fn, class... Args>
-  auto SubmitTask(fn&& f, Args&&... args)
-      -> std::promise<bool>;
+  auto SubmitTask(fn&& f, Args&&... args) -> std::promise<bool>;
 };
 
 template <class fn, class... Args>
-  requires requires (fn&& f, Args&&... args,decltype(f(std::forward<Args>(args)...)) res) {
-    res = f(std::forward<Args>(args)...);
-  }
-  auto ThreadPool::SubmitTask(fn&& f, Args&&... args)
-      -> std::promise<decltype(f(std::forward<Args>(args)...))> {
-        auto task = std::bind(f, std::forward<Args>(args)...);
-        std::promise<decltype(f(std::forward<Args>(args)...))> promise;
-        std::function<void()> wrapper_fn = [task, &promise]() {
-          auto res = task();
-          promise.set_value(res);
-        };
-        this->task_queue.AddTask(wrapper_fn);
-        wake_signal.notify_all();
-        return promise;
-      }
+requires requires(fn&& f, Args&&... args,
+                  decltype(f(std::forward<Args>(args)...)) res) {
+  res = f(std::forward<Args>(args)...);
+}
+auto ThreadPool::SubmitTask(fn&& f, Args&&... args)
+    -> std::promise<decltype(f(std::forward<Args>(args)...))> {
+  auto task = std::bind(f, std::forward<Args>(args)...);
+  std::promise<decltype(f(std::forward<Args>(args)...))> promise;
+  std::function<void()> wrapper_fn = [task, &promise]() {
+    auto res = task();
+    promise.set_value(res);
+  };
+  this->task_queue.AddTask(wrapper_fn);
+  wake_signal.notify_all();
+  return promise;
+}
 
 template <class fn, class... Args>
-auto ThreadPool::SubmitTask(fn&& f, Args&&... args)
-    -> std::promise<bool> {
+auto ThreadPool::SubmitTask(fn&& f, Args&&... args) -> std::promise<bool> {
   auto task = std::bind(f, std::forward<Args>(args)...);
-  // for those function without return value, we use a bool value to represent for its execution result
+  // for those function without return value, we use a bool value to represent
+  // for its execution result
   std::promise<bool> promise;
   std::function<void()> wrapper_fn = [task, &promise]() {
-    try
-    {
+    try {
       task();
       promise.set_value(true);
-    }
-    catch(const std::exception& e)
-    {
+    } catch (const std::exception& e) {
       std::cerr << e.what() << '\n';
       promise.set_value(false);
     }
