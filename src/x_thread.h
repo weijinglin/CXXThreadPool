@@ -23,12 +23,6 @@ class TaskQueue {
   bool isEmpty() { return task_queue.empty(); }
 };
 
-template <typename fn, typename... Args>
-concept WithReturnValue = requires (fn&& f, Args&&... args)
-{
-    !std::same_as<decltype(f(std::forward<Args>(args)...)),void>;
-};
-
 template <class R, class... Args>
 R getRetValue(R(*)(Args...));
 
@@ -53,8 +47,9 @@ class ThreadPool {
   ~ThreadPool();
 
   template <class fn, class... Args>
-  // requires (!std::is_same_v<fn,void(*)(Args...)>)
-  requires (!std::is_same_v<int,int>)
+  requires requires (fn&& f, Args&&... args,decltype(f(std::forward<Args>(args)...)) res) {
+    res = f(std::forward<Args>(args)...);
+  }
   auto SubmitTask(fn&& f, Args&&... args)
       -> std::promise<decltype(f(std::forward<Args>(args)...))>;
 
@@ -64,8 +59,9 @@ class ThreadPool {
 };
 
 template <class fn, class... Args>
-  // requires (!std::is_same_v<fn,void(*)(Args...)>)
-  requires (!std::is_same_v<int,int>)
+  requires requires (fn&& f, Args&&... args,decltype(f(std::forward<Args>(args)...)) res) {
+    res = f(std::forward<Args>(args)...);
+  }
   auto ThreadPool::SubmitTask(fn&& f, Args&&... args)
       -> std::promise<decltype(f(std::forward<Args>(args)...))> {
         auto task = std::bind(f, std::forward<Args>(args)...);

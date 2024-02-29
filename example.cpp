@@ -21,7 +21,6 @@ void printType(fn&& f, Args&&... args) {
 
 template <class fn, class... Args>
 void printFunctionType(fn f) {
-  std::cout << "string   type is " << typeid(std::string).name() << std::endl;
   std::cout << "function type is " << typeid(fn).name() << std::endl;
   std::cout << "expect   type is " << typeid(void(*)(Args...)).name() << std::endl;
 }
@@ -32,9 +31,9 @@ int main(int argc, char* argv[]) {
   MyThreadPool::ThreadPool thread_pool(8);
   printType(hello_not_value_return, name);
   printFunctionType(hello_not_value_return);
-  // auto promise = thread_pool.SubmitTask(hello, name);
-  // std::cout << "get return value is " << promise.get_future().get()
-  //           << std::endl;
+  auto promise = thread_pool.SubmitTask(hello, name);
+  std::cout << "get return value is " << promise.get_future().get()
+            << std::endl;
   auto promise_not_val = thread_pool.SubmitTask(hello_not_value_return,name);
   std::cout << "get return value is " << promise_not_val.get_future().get()
             << std::endl;
