@@ -21,4 +21,4 @@ auto result = promise.get_future().get();
 ```
 
 # Attention
-for functions that return void as result type. We will return the std::promise<bool>. 
+for functions that return void as result type. We will return the std::promise\<bool>. 
