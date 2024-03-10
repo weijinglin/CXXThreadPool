@@ -31,6 +31,31 @@ TEST_F(ThreadPoolTest, SimpleFuncWithOutRetVal) {
 }
 
 // concurrent testing
-TEST_F(ThreadPoolTest, ConcurrencyTest) {
+TEST_F(ThreadPoolTest, ConcurrencyWithRetTest) {
+    int concurrency = 10;
+    std::vector<int> src;
+    for (int i = 0;i < concurrency;++i) {
+        src.push_back(i + 1);
+    }
+    std::vector<int> res;
+    for (auto data : src) {
+        res.push_back(pool->SubmitTask(add,data,data).get_future().get());
+    }
+    ASSERT_EQ(res.size(),concurrency);
+    for (int i = 0;i < concurrency; ++i) {
+        ASSERT_EQ(res.at(i),src.at(i) * 2);
+    }
+}
 
+// concurrent testing
+TEST_F(ThreadPoolTest, ConcurrencyWithoutRetTest) {
+    int concurrency = 10;
+    std::vector<bool> res;
+    for (int i = 0;i < concurrency; ++i) {
+        res.push_back(pool->SubmitTask(void_func).get_future().get());
+    }
+    ASSERT_EQ(res.size(),concurrency);
+    for (int i = 0;i < concurrency; ++i) {
+        ASSERT_TRUE(res.at(i));
+    }
 }
