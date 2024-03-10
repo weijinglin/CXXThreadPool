@@ -8,7 +8,7 @@ apt install googletest
 ```
 
 # Usage
-```
+```C++
 // construct a ThreadPool
 // first parameter : thread number (default get from std::thread::hardware_concurrency) 
 MyThreadPool::ThreadPool thread_pool(8);
