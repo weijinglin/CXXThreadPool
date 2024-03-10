@@ -27,12 +27,17 @@ ThreadPool::ThreadPool(uint64_t num) {
 
 void ThreadPool::work() {
   // todo : enable the exiting ability of thread worker
-  while (!is_terminated.load()) {
+  while (true) {
     /* code */
     std::function<void()> fn;
     {
       std::unique_lock<std::mutex> ulock{task_guard};
-      wake_signal.wait(ulock);
+      wake_signal.wait(ulock, [this] {
+        return this->is_terminated.load() || !this->isEmpty();
+      });
+      if (this->is_terminated.load()) {
+        break;
+      }
       if (this->isEmpty()) {
         continue;
       }
