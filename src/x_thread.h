@@ -27,6 +27,7 @@ template <class R, class... Args>
 R getRetValue(R (*)(Args...));
 
 class ThreadPool {
+private:
   TaskQueue task_queue;
   std::vector<std::thread> threads;
   std::condition_variable wake_signal;
@@ -40,7 +41,7 @@ class ThreadPool {
   // a function which is not thread-safe
   bool isEmpty();
 
-  explicit ThreadPool(uint64_t num);
+  explicit ThreadPool(uint64_t num = std::thread::hardware_concurrency());
 
   ThreadPool() = delete;
 
