@@ -27,7 +27,7 @@ template <class R, class... Args>
 R getRetValue(R (*)(Args...));
 
 class ThreadPool {
-private:
+ private:
   TaskQueue task_queue;
   std::vector<std::thread> threads;
   std::condition_variable wake_signal;
