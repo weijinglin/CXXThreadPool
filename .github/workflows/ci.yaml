@@ -12,7 +12,7 @@ jobs:
           git -C "${{github.workspace}}/${{github.event.repository.name}}" checkout ${{github.ref}}
       - name: ThreadPool unittest
         run: |
-          apt install googletest
+          sudo apt install googletest
           cd ${{github.event.repository.name}}
           mkdir build && cd build
           cmake ..
