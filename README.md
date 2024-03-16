@@ -4,7 +4,7 @@ A ThreadPool written in C++.
 # Configuration
 ```
 // install dependency
-apt install googletest
+apt install googletest libgtest-dev
 ```
 
 # Usage
