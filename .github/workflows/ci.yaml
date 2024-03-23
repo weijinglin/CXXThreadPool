@@ -3,7 +3,7 @@ on: push
 
 jobs:
   ci:
-    runs-on: lin-desktop
+    runs-on: self-hosted
     steps:
       - name: Checkout repo
         run: |
